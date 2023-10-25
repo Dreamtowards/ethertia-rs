@@ -7,8 +7,30 @@ authors = ["dreamtowards"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = "0.11"
+bevy = "0.11.3"
+
+memory-stats = "1.1.0"
+
+# enet = "0.3.0"
+
+# system
+
+winit = "0.29.2"
+
+native-dialog = "0.6.4"
+sysinfo = "0.29.10"
+# notify = "6.1.1"  # filewatch
+
+byte-unit = "4.0.19"
 
 
-[workspace]
-resolver = "2" # Important! wgpu/Bevy needs this!
+
+# serde = "1.0.0"
+
+# physx = "0.19.0"
+
+# math
+# glam, vek
+
+# controller
+# gilrs = "0.10.0"
