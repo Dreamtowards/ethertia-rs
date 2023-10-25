@@ -22,6 +22,7 @@ sysinfo = "0.29.10"
 # notify = "6.1.1"  # filewatch
 
 byte-unit = "4.0.19"
+log = "0.4.20"
 
 
 

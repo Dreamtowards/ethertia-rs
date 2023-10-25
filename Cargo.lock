@@ -1664,6 +1664,7 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "byte-unit",
+ "log",
  "memory-stats",
  "native-dialog",
  "sysinfo",
