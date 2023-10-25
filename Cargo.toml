@@ -9,7 +9,6 @@ authors = ["dreamtowards"]
 [dependencies]
 bevy = "0.11.3"
 
-memory-stats = "1.1.0"
 
 # enet = "0.3.0"
 
@@ -19,10 +18,15 @@ winit = "0.29.2"
 
 native-dialog = "0.6.4"
 sysinfo = "0.29.10"
+memory-stats = "1.1.0"
 # notify = "6.1.1"  # filewatch
 
-byte-unit = "4.0.19"
 log = "0.4.20"
+env_logger = "0.10.0"
+chrono = "0.4.31"
+
+byte-unit = "4.0.19"
+
 
 
 
