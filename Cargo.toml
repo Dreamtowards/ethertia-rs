@@ -7,14 +7,14 @@ authors = ["dreamtowards"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = "0.11.3"
 
+wgpu = "0.17.1"
+winit = { version = "0.29.2", features = ["rwh_05"] }
 
 # enet = "0.3.0"
 
 # system
 
-winit = "0.29.2"
 
 native-dialog = "0.6.4"
 sysinfo = "0.29.10"
@@ -25,7 +25,8 @@ log = "0.4.20"
 env_logger = "0.10.0"
 chrono = "0.4.31"
 byte-unit = "4.0.19"
-cfg-if = "1.0.0"
+pollster = "0.3.0"  # block_on async
+
 
 
 # serde = "1.0.0"
@@ -38,25 +39,3 @@ cfg-if = "1.0.0"
 # controller
 # gilrs = "0.10.0"
 
-
-
-########## WASM ##########
-
-# These lines tell cargo that we want to allow our crate to build
-# a native Rust static library (rlib) and a C/C++ compatible library (cdylib).
-# We need rlib if we want to run wgpu in a desktop environment.
-# We need cdylib to create the Web Assembly that the browser will run.
-[lib]
-crate-type = ["cdylib", "rlib"]
-
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-console_error_panic_hook = "0.1.6"
-console_log = "1.0"
-wgpu = { version = "0.17", features = ["webgl"]}
-wasm-bindgen = "0.2"
-wasm-bindgen-futures = "0.4.30"
-web-sys = { version = "0.3", features = [
-    "Document",
-    "Window",
-    "Element",
-]}
