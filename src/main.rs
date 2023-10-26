@@ -26,7 +26,7 @@ struct Vertex {
 }
 
 const VERTICES: &[Vertex] = &[
-    Vertex { position: [0.0, 0.5, 0.0], color: [1.0, 0.0, 0.0] },
+    Vertex { position: [-0.3, 0.5, 0.0], color: [1.0, 0.0, 0.0] },
     Vertex { position: [-0.5, -0.5, 0.0], color: [0.0, 1.0, 0.0] },
     Vertex { position: [0.5, -0.5, 0.0], color: [0.0, 0.0, 1.0] },
 ];
@@ -98,7 +98,13 @@ impl State
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: "vs_main",
-                buffers: &[],
+                buffers: &[
+                    wgpu::VertexBufferLayout {
+                        array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
+                        step_mode: wgpu::VertexStepMode::Vertex,
+                        attributes: &vertex_attr_array![0 => Float32x3, 1 => Float32x3],
+                    }
+                ],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
@@ -133,23 +139,6 @@ impl State
             contents: bytemuck::cast_slice(VERTICES),
             usage: wgpu::BufferUsages::VERTEX,
         });
-        wgpu::VertexBufferLayout {
-            array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
-            step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &vertex_attr_array![0 => Float32x3, 1 => Float32x3],
-            // &[
-            //     wgpu::VertexAttribute {
-            //         offset: 0,
-            //         shader_location: 0,
-            //         format: wgpu::VertexFormat::Float32x3,
-            //     },
-            //     wgpu::VertexAttribute {
-            //         offset: std::mem::size_of::<[f32; 3]>() as wgpu::BufferAddress,
-            //         shader_location: 1,
-            //         format: wgpu::VertexFormat::Float32x3,
-            //     }
-            // ]
-        };
 
 
         Self {
@@ -160,6 +149,7 @@ impl State
             window_size,
             window,
             render_pipeline,
+            vertex_buffer,
             red: 1.0,
         }
     }
@@ -196,7 +186,10 @@ impl State
             });
 
             render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.draw(0..3, 0..1);
+
+            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+
+            render_pass.draw(0..VERTICES.len() as u32, 0..1);
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));
