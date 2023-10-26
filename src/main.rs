@@ -1,3 +1,5 @@
+mod texture;
+
 use wgpu::util::DeviceExt;
 use wgpu::vertex_attr_array;
 use winit::{
@@ -5,6 +7,7 @@ use winit::{
     event_loop::EventLoop,
     window::{Window, WindowBuilder},
 };
+use crate::texture::Texture;
 
 struct State  {
     surface: wgpu::Surface,
@@ -15,6 +18,9 @@ struct State  {
     window: Window,
     render_pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
+    index_buffer: wgpu::Buffer,
+    bind_group: wgpu::BindGroup,
+    camera: Camera,
     red: f64
 }
 
@@ -22,19 +28,61 @@ struct State  {
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 struct Vertex {
     position: [f32; 3],
+    uv: [f32; 2],
     color: [f32; 3],
 }
 
+
 const VERTICES: &[Vertex] = &[
-    Vertex { position: [-0.3, 0.5, 0.0], color: [1.0, 0.0, 0.0] },
-    Vertex { position: [-0.5, -0.5, 0.0], color: [0.0, 1.0, 0.0] },
-    Vertex { position: [0.5, -0.5, 0.0], color: [0.0, 0.0, 1.0] },
+    Vertex { position: [-0.0868241, 0.49240386, 0.0], uv: [0.4131759, 0.99240386], color: [0.5, 0.0, 0.5] }, // A
+    Vertex { position: [-0.49513406, 0.06958647, 0.0], uv: [0.0048659444, 0.56958647], color: [0.5, 0.0, 0.5] }, // B
+    Vertex { position: [-0.21918549, -0.44939706, 0.0], uv: [0.28081453, 0.05060294], color: [0.5, 0.0, 0.5] }, // C
+    Vertex { position: [0.35966998, -0.3473291, 0.0], uv: [0.85967, 0.1526709], color: [0.5, 0.0, 0.5] }, // D
+    Vertex { position: [0.44147372, 0.2347359, 0.0], uv: [0.9414737, 0.7347359], color: [0.5, 0.0, 0.5] }, // E
 ];
+
+const INDICES: &[u16] = &[
+    0, 1, 4,
+    1, 2, 4,
+    2, 3, 4,
+];
+
+use vek::*;
+
+struct Camera {
+    eye: Vec3<f32>,
+    target: Vec3<f32>,
+    up: Vec3<f32>,
+    
+    width: f32,
+    height: f32,
+    fovy: f32,
+    znear: f32,
+    zfar: f32,
+}
+
+impl Camera {
+
+    fn build_mat(&self) -> Mat4<f32> {
+
+        let view = Mat4::look_at_rh(self.eye, self.target, self.up);
+
+        
+        let proj = Mat4::perspective_fov_rh_zo(
+            self.fovy.to_radians(), self.width, self.height, self.znear, self.zfar);
+
+        return proj * view;
+    }
+}
 
 impl State
 {
     async fn new(window: Window) -> Self
     {
+        // #[cfg(target_os = "windows")]
+        // {
+        //
+        // }
 
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::VULKAN,
@@ -86,9 +134,70 @@ impl State
             source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
         });
 
+
+
+        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("VBUF"),
+            contents: bytemuck::cast_slice(VERTICES),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+        let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("iBUF"),
+            contents: bytemuck::cast_slice(INDICES),
+            usage: wgpu::BufferUsages::INDEX,
+        });
+
+        let diffuse_data = include_bytes!("tr.png");
+
+        let tex = Texture::from_bytes(&device, &queue, diffuse_data, Some("Tex2")).unwrap();
+
+
+        let texture_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        // This should match the filterable field of the
+                        // corresponding Texture entry above.
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ],
+                label: Some("texture_bind_group_layout"),
+            });
+
+        let diffuse_bind_group = device.create_bind_group(
+            &wgpu::BindGroupDescriptor {
+                layout: &texture_bind_group_layout,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: wgpu::BindingResource::TextureView(&tex.view),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: wgpu::BindingResource::Sampler(&tex.sampler),
+                    }
+                ],
+                label: Some("diffuse_bind_group"),
+            }
+        );
+
+
         let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("PLayout"),
-            bind_group_layouts: &[],
+            bind_group_layouts: &[&texture_bind_group_layout],
             push_constant_ranges: &[]
         });
 
@@ -102,7 +211,7 @@ impl State
                     wgpu::VertexBufferLayout {
                         array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
                         step_mode: wgpu::VertexStepMode::Vertex,
-                        attributes: &vertex_attr_array![0 => Float32x3, 1 => Float32x3],
+                        attributes: &vertex_attr_array![0 => Float32x3, 1 => Float32x2, 2 => Float32x3],
                     }
                 ],
             },
@@ -133,12 +242,20 @@ impl State
             multiview: None,
         });
 
-
-        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-           label: Some("VBUF"),
-            contents: bytemuck::cast_slice(VERTICES),
-            usage: wgpu::BufferUsages::VERTEX,
-        });
+        let camera = Camera {
+            // position the camera one unit up and 2 units back
+            // +z is out of the screen
+            eye: (0.0, 1.0, 2.0).into(),
+            // have it look at the origin
+            target: (0.0, 0.0, 0.0).into(),
+            // which way is "up"
+            up: Vec3::unit_y(),
+            width: window_size.width,
+            height: window_size.height,
+            fovy: 45.0,
+            znear: 0.1,
+            zfar: 100.0,
+        };
 
 
         Self {
@@ -150,6 +267,9 @@ impl State
             window,
             render_pipeline,
             vertex_buffer,
+            index_buffer,
+            bind_group: diffuse_bind_group,
+            camera,
             red: 1.0,
         }
     }
@@ -187,9 +307,11 @@ impl State
 
             render_pass.set_pipeline(&self.render_pipeline);
 
+            render_pass.set_bind_group(0, &self.bind_group, &[]);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+            render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
 
-            render_pass.draw(0..VERTICES.len() as u32, 0..1);
+            render_pass.draw_indexed(0..INDICES.len() as u32, 0, 0..1);
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));
@@ -198,6 +320,7 @@ impl State
         Ok(())
     }
 }
+
 
 async fn run()
 {
@@ -213,6 +336,8 @@ async fn run()
     let mut state = State::new(window).await;
 
 
+    // 问题：
+    // 1. 渲染 逻辑 应该写在哪里，调用会不会太高频或太低频？
     event_loop.run(move |event,elwt| {
 
         match event {
