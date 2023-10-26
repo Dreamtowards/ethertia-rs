@@ -1,31 +1,36 @@
 
-
 use winit::{
-    event::{Event, WindowEvent},
+    event::*,
     event_loop::EventLoop,
     window::WindowBuilder,
 };
+use winit::event::WindowEvent::KeyboardInput;
+use winit::keyboard::{KeyCode, PhysicalKey};
 
 fn main()
 {
-    
+    env_logger::init();
 
-    env_logger::builder()
-        .format(|buf, record| {
+    let str = String::from("SomeS");
 
-            let mut dim = buf.style();
-            dim.set_dimmed(true);
+    let s2 = str.clone();
 
-            use std::io::Write;
-            writeln!(buf,
-                     "{}{}{}{}: {}",
-                     dim.value(chrono::Local::now().format("[%Y-%m-%d %H:%M:%S%.6f]")),
-                     dim.value(format!("[main/")),
-                     buf.default_level_style(record.level()).value(record.level()),
-                     dim.value(format!("][{} {}:{}]", record.target(), record.file().unwrap(), record.line().unwrap())),
-                     record.args())
-        })
-        .init();
+    //
+    // let n = 6;
+    //
+    // let arr = [n; 4];
+    //
+    // for ele in arr.iter()
+    // {
+    //     println!("SSS {}", arr.len());
+    //
+    // }
+    //
+    // for i in (3..5).rev()
+    // {
+    //     println!("{}", i)
+    // }
+    //
 
     log::trace!("Trace Sth");
     log::debug!("Debug Sth");
@@ -33,9 +38,6 @@ fn main()
     log::warn!("Some Warn");
     log::error!("Some Error");
 
-    println!("SSS");
-
-    return;
 
     let event_loop = EventLoop::new().unwrap();
 
@@ -45,12 +47,20 @@ fn main()
         .build(&event_loop)
         .unwrap();
 
-    event_loop.run(move |event, elwt| {
-        println!("{event:?}");
+    event_loop.run(move |event,elwt| {
 
         match event {
             Event::WindowEvent { event, window_id } if window_id == window.id() => match event {
-                WindowEvent::CloseRequested => elwt.exit(),
+                WindowEvent::CloseRequested //|
+                // WindowEvent::KeyboardInput {
+                //     event: KeyEvent {
+                //         state: ElementState::Pressed,
+                //         physical_key: PhysicalKey::Code(KeyCode::Escape),
+                //         ..
+                //     },
+                //     ..
+                // }
+                => elwt.exit(),
                 WindowEvent::RedrawRequested => {
                     // Notify the windowing system that we'll be presenting to the window.
                     window.pre_present_notify();
