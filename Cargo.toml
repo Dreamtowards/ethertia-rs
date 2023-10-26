@@ -26,6 +26,7 @@ env_logger = "0.10.0"
 chrono = "0.4.31"
 byte-unit = "4.0.19"
 pollster = "0.3.0"  # block_on async
+bytemuck = { version = "1.12", features = [ "derive" ] }  # bytemuck::cast_slice to &[u8]
 
 
 
